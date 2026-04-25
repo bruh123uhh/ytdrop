@@ -3,7 +3,6 @@ __pycache__/
 *.pyo
 .env
 downloads/
-data/
 *.mp3
 *.mp4
 *.wav
