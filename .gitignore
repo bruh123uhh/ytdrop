@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+downloads/
+data/
+*.mp3
+*.mp4
+*.wav
+*.m4a
+*.jpg
+*.webp
+.DS_Store
+*.log
+*.tmp

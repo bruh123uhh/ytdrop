@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>YTDROP — {% if register %}Registro{% else %}Iniciar Sesión{% endif %}</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#080b14;--surface:#0f1320;--card:#13192e;--border:#1f2a42;--a1:#ff3c6f;--a2:#00cfff;--a3:#ffe234;--text:#e2eaf8;--muted:#3d4f72;--ff:'Syne',sans-serif;--mono:'JetBrains Mono',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--ff);min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+
+.bg-orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.1;pointer-events:none}
+.o1{width:700px;height:700px;background:var(--a1);top:-200px;left:-200px;animation:dr 14s ease-in-out infinite alternate}
+.o2{width:600px;height:600px;background:var(--a2);bottom:-150px;right:-150px;animation:dr 18s ease-in-out infinite alternate-reverse}
+.o3{width:400px;height:400px;background:#a855f7;top:40%;left:50%;animation:dr 10s ease-in-out infinite alternate}
+@keyframes dr{0%{transform:translate(0,0)}100%{transform:translate(30px,20px)}}
+.grid{position:fixed;inset:0;background-image:linear-gradient(rgba(0,207,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,207,255,.03) 1px,transparent 1px);background-size:44px 44px;pointer-events:none}
+
+.box{
+  position:relative;z-index:1;width:100%;max-width:420px;margin:20px;
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:40px 36px;
+}
+.box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--a1),var(--a2),var(--a3));border-radius:12px 12px 0 0}
+
+.logo{font-weight:800;font-size:32px;letter-spacing:-1px;text-align:center;margin-bottom:6px;
+  background:linear-gradient(120deg,#fff,var(--a2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo span{-webkit-text-fill-color:var(--a1)}
+.tagline{text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:32px}
+
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:28px}
+.tab-btn{flex:1;padding:10px;font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;background:none;border:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--a2);border-bottom-color:var(--a2)}
+
+.form-group{margin-bottom:16px}
+.form-group label{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:7px}
+.form-input{width:100%;background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:12px 16px;outline:none;border-radius:6px;transition:border-color .2s}
+.form-input:focus{border-color:var(--a2)}
+.form-input::placeholder{color:var(--muted)}
+
+.btn-main{width:100%;background:var(--a1);color:#fff;border:none;padding:14px;font-family:var(--ff);font-size:16px;font-weight:800;letter-spacing:1px;cursor:pointer;border-radius:6px;transition:all .2s;margin-top:8px}
+.btn-main:hover{background:#ff1a55;transform:translateY(-1px)}
+.btn-main:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+.err{background:rgba(255,60,111,.08);border:1px solid rgba(255,60,111,.3);border-left:3px solid var(--a1);border-radius:4px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--a1);margin-top:14px;display:none}
+.ok-msg{background:rgba(0,255,179,.06);border:1px solid rgba(0,255,179,.3);border-left:3px solid #00ffb3;border-radius:4px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:#00ffb3;margin-top:14px;display:none}
+
+.plans-hint{margin-top:24px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px}
+.plans-hint-title{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.plan-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)}
+.plan-row:last-child{border-bottom:none}
+.plan-icon{font-size:16px}
+.plan-name{font-weight:700;font-size:13px;flex:1}
+.plan-price{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.plan-tag{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:10px}
+
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bg-orb o1"></div>
+<div class="bg-orb o2"></div>
+<div class="bg-orb o3"></div>
+<div class="grid"></div>
+
+<div class="box">
+  <div class="logo">YT<span>DROP</span></div>
+  <div class="tagline">Tu descargador de música</div>
+
+  <div class="tabs">
+    <button class="tab-btn {% if not register %}active{% endif %}" onclick="switchTab('login',this)">Iniciar Sesión</button>
+    <button class="tab-btn {% if register %}active{% endif %}" onclick="switchTab('register',this)">Registro</button>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="form-login" {% if register %}style="display:none"{% endif %}>
+    <div class="form-group">
+      <label>Usuario</label>
+      <input id="l-user" class="form-input" type="text" placeholder="tu_usuario" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input id="l-pass" class="form-input" type="password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button class="btn-main" id="btn-login" onclick="doLogin()">Entrar</button>
+    <div class="err" id="l-err"></div>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="form-register" {% if not register %}style="display:none"{% endif %}>
+    <div class="form-group">
+      <label>Usuario</label>
+      <input id="r-user" class="form-input" type="text" placeholder="tu_usuario" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input id="r-email" class="form-input" type="email" placeholder="tu@email.com" autocomplete="email"/>
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input id="r-pass" class="form-input" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/>
+    </div>
+    <button class="btn-main" id="btn-reg" onclick="doRegister()">Crear Cuenta Gratis</button>
+    <div class="err" id="r-err"></div>
+    <div class="ok-msg" id="r-ok"></div>
+  </div>
+
+  <!-- Plans preview -->
+  <div class="plans-hint">
+    <div class="plans-hint-title">Planes disponibles</div>
+    <div class="plan-row"><div class="plan-icon">🆓</div><div class="plan-name">Free</div><div class="plan-price">Gratis · 3 desc/día</div></div>
+    <div class="plan-row"><div class="plan-icon">⭐</div><div class="plan-name" style="color:#00cfff">Basic</div><div class="plan-price">4.99€/mes · 20 desc/día</div></div>
+    <div class="plan-row"><div class="plan-icon">💜</div><div class="plan-name" style="color:#a855f7">Medium</div><div class="plan-price">9.99€/mes · 50 desc/día</div></div>
+    <div class="plan-row"><div class="plan-icon">👑</div><div class="plan-name" style="color:#ffe234">Premium</div><div class="plan-price">19.99€/mes · Ilimitado</div></div>
+  </div>
+</div>
+
+<script>
+function switchTab(tab, el){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('form-login').style.display = tab==='login'?'block':'none';
+  document.getElementById('form-register').style.display = tab==='register'?'block':'none';
+}
+
+async function doLogin(){
+  const user=$('l-user').value.trim(), pass=$('l-pass').value;
+  if(!user||!pass){showErr('l-err','Rellena todos los campos');return}
+  setLoading('btn-login',true);
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pass})});
+    const d=await r.json();
+    if(d.error){showErr('l-err',d.error);return}
+    window.location=d.redirect||'/';
+  }catch(e){showErr('l-err','Error de conexión')}
+  finally{setLoading('btn-login',false)}
+}
+
+async function doRegister(){
+  const user=$('r-user').value.trim(), email=$('r-email').value.trim(), pass=$('r-pass').value;
+  if(!user||!email||!pass){showErr('r-err','Rellena todos los campos');return}
+  setLoading('btn-reg',true);
+  try{
+    const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,email,password:pass})});
+    const d=await r.json();
+    if(d.error){showErr('r-err',d.error);return}
+    window.location=d.redirect||'/';
+  }catch(e){showErr('r-err','Error de conexión')}
+  finally{setLoading('btn-reg',false)}
+}
+
+function $(id){return document.getElementById(id)}
+function showErr(id,msg){const e=$(id);e.textContent='⚠ '+msg;e.style.display='block';setTimeout(()=>e.style.display='none',5000)}
+function setLoading(id,on){const b=$(id);b.disabled=on;b.innerHTML=on?'<span class="spin"></span>Cargando...':b.dataset.orig||(b.innerHTML=b.textContent)}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter'){const al=document.getElementById('form-login').style.display!=='none';al?doLogin():doRegister()}})
+document.querySelectorAll('.btn-main').forEach(b=>b.dataset.orig=b.textContent)
+</script>
+</body>
+</html>
