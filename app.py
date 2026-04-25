@@ -38,6 +38,7 @@ app.config.update(
 DOWNLOAD_DIR = os.environ.get("DOWNLOAD_FOLDER", "downloads")
 DATA_FILE    = os.environ.get("DATA_FILE", "data/db.json")
 FILE_TTL     = 86400   # delete files after 24h
+COOKIES_FILE = os.environ.get("COOKIES_FILE", "data/cookies.txt")
 
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 os.makedirs("data", exist_ok=True)
@@ -373,18 +374,45 @@ def make_hook(tid: str):
     return hook
 
 
+def get_ydl_base_opts() -> dict:
+    """Base yt-dlp options — adds cookies and spoofs browser if available."""
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        # Spoof a real browser so YouTube doesn't block us
+        "http_headers": {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+        },
+        # Use PO token workaround for age-restricted / server-blocked content
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["web", "android"],
+                "player_skip": ["webpage", "configs"],
+            }
+        },
+    }
+    # Add cookies if the file exists
+    if os.path.exists(COOKIES_FILE):
+        opts["cookiefile"] = COOKIES_FILE
+    return opts
+
+
 def dl_worker(url: str, tid: str, fmt: str, quality: str, uid: str,
               start_t=None, end_t=None) -> None:
     clean_old_files()
     try:
         out = os.path.join(DOWNLOAD_DIR, f"{tid}_%(title)s.%(ext)s")
-        opts = {
+        opts = get_ydl_base_opts()
+        opts.update({
             "outtmpl": out,
             "progress_hooks": [make_hook(tid)],
-            "quiet": True,
-            "no_warnings": True,
             "noplaylist": True,
-        }
+        })
 
         if start_t or end_t:
             sec = {}
@@ -1017,8 +1045,7 @@ def api_search():
 @login_required
 def api_trending():
     try:
-        opts = {"quiet": True, "no_warnings": True,
-                "extract_flat": True, "skip_download": True, "playlistend": 20}
+        opts = {**get_ydl_base_opts(), "extract_flat": True, "skip_download": True, "playlistend": 20}
         url  = ("https://www.youtube.com/feed/trending"
                 "?bp=4gIuCggvbS8wNHZtZhIiUExGZ3QxV2hkX2JXSjhJUEVlWGFSbzVkbHFoNmVhOEE%3D")
         with yt_dlp.YoutubeDL(opts) as ydl:
@@ -1048,7 +1075,7 @@ def api_info():
     if not url:
         return jsonify({"error": "URL requerida"}), 400
     try:
-        opts = {"quiet": True, "no_warnings": True, "noplaylist": True}
+        opts = {**get_ydl_base_opts(), "noplaylist": True}
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
         return jsonify({
@@ -1152,6 +1179,33 @@ def api_stream(tid):
 @app.route("/health")
 def health():
     return jsonify({"status": "ok", "tasks": len(tasks)})
+
+
+@app.route("/api/admin/upload_cookies", methods=["POST"])
+@admin_required
+def api_upload_cookies():
+    """Admin can upload cookies.txt to fix age-restricted / blocked downloads."""
+    if "file" not in request.files:
+        return jsonify({"error": "No se envió ningún archivo"}), 400
+    f = request.files["file"]
+    if not f.filename.endswith(".txt"):
+        return jsonify({"error": "El archivo debe ser .txt"}), 400
+    os.makedirs("data", exist_ok=True)
+    f.save(COOKIES_FILE)
+    log(session["user_id"], "admin_note", "Cookies de YouTube actualizadas")
+    return jsonify({"ok": True, "message": "Cookies subidas correctamente"})
+
+
+@app.route("/api/admin/cookies_status")
+@admin_required
+def api_cookies_status():
+    exists = os.path.exists(COOKIES_FILE)
+    size = os.path.getsize(COOKIES_FILE) if exists else 0
+    mtime = ""
+    if exists:
+        import datetime as dt
+        mtime = dt.datetime.fromtimestamp(os.path.getmtime(COOKIES_FILE)).strftime("%d/%m/%Y %H:%M")
+    return jsonify({"exists": exists, "size": size, "updated": mtime})
 
 
 if __name__ == "__main__":
