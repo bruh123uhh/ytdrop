@@ -379,7 +379,6 @@ def get_ydl_base_opts() -> dict:
     opts = {
         "quiet": True,
         "no_warnings": True,
-        # Spoof a real browser so YouTube doesn't block us
         "http_headers": {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -387,14 +386,16 @@ def get_ydl_base_opts() -> dict:
                 "Chrome/124.0.0.0 Safari/537.36"
             ),
             "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
-        # Use PO token workaround for age-restricted / server-blocked content
         "extractor_args": {
             "youtube": {
-                "player_client": ["web", "android"],
-                "player_skip": ["webpage", "configs"],
+                "player_client": ["android", "web"],
             }
         },
+        # Always try to avoid bot detection
+        "sleep_interval": 1,
+        "max_sleep_interval": 3,
     }
     # Add cookies if the file exists
     if os.path.exists(COOKIES_FILE):
@@ -483,14 +484,16 @@ def dl_worker(url: str, tid: str, fmt: str, quality: str, uid: str,
 
     except yt_dlp.utils.DownloadError as exc:
         msg = str(exc)
-        if "age" in msg.lower() or "Sign in" in msg:
-            msg = "Video requiere verificación de edad."
+        if "Sign in" in msg or "bot" in msg.lower() or "age" in msg.lower():
+            msg = "YouTube está bloqueando esta descarga. Prueba con otra canción o espera unos minutos."
         elif "private" in msg.lower():
             msg = "Video privado."
-        elif "not available" in msg.lower():
+        elif "not available" in msg.lower() or "region" in msg.lower():
             msg = "No disponible en tu región."
+        elif "copyright" in msg.lower():
+            msg = "Video bloqueado por derechos de autor."
         else:
-            msg = "Error de descarga: " + msg[:160]
+            msg = "Error: " + msg[:160]
         tasks[tid] = {"status": "error", "message": msg}
         log(uid, "download_error", msg)
     except Exception as exc:
